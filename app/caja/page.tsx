@@ -217,7 +217,7 @@ export default function Caja() {
                 <span>Servicios {pesos(total)}</span>
                 <b>A cobrar en caja: {pesos(estimado)}</b>
               </div>
-              {estimado > 0 && estimado < 1000 && <Aviso tipo="alerta">Menos de $1.000: Factus Pay no lo cobra por QR (regla V01).</Aviso>}
+                           {estimado > 0 && estimado < 10000 && <Aviso tipo="alerta">Menos de $10.000: el sandbox de Factus Pay no lo cobra por QR (regla V01).</Aviso>}
               {!cantidadesValidas && <Aviso tipo="error">Cada servicio seleccionado debe tener una cantidad mayor a cero.</Aviso>}
               <div className="acciones">
                 <button className="btn" onClick={crear} disabled={ocupado || !seleccionados.length || !pacienteId || !contratoId || !cantidadesValidas}>Registrar admisión</button>

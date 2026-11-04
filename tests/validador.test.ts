@@ -37,12 +37,12 @@ const ctxCufe = {
 }
 
 describe('Recaudo Factus Pay (V01, V02)', () => {
-  it('acepta un monto válido', () => assert.equal(validar({ reference_code: 'ADM-1-COP', amount: '4700' }, { tipo: 'recaudoPay' }).ok, true))
+  it('acepta un monto válido', () => assert.equal(validar({ reference_code: 'ADM-1-COP', amount: '18800' }, { tipo: 'recaudoPay' }).ok, true))
   it('V01: menos de $1.000 no se cobra por QR', () => assert.deepEqual(codigos(validar({ reference_code: 'X', amount: '900' }, { tipo: 'recaudoPay' })), ['V01']))
   it('V01: más de $12.100.000', () => assert.deepEqual(codigos(validar({ reference_code: 'X', amount: '12100001' }, { tipo: 'recaudoPay' })), ['V01']))
   it('V02: referencia de más de 100 caracteres o repetida', () => {
-    assert.deepEqual(codigos(validar({ reference_code: 'x'.repeat(101), amount: '5000' }, { tipo: 'recaudoPay' })), ['V02'])
-    assert.deepEqual(codigos(validar({ reference_code: 'X', amount: '5000' }, { tipo: 'recaudoPay', referenciaDuplicada: true })), ['V02'])
+    assert.deepEqual(codigos(validar({ reference_code: 'x'.repeat(101), amount: '15000' }, { tipo: 'recaudoPay' })), ['V02'])
+    assert.deepEqual(codigos(validar({ reference_code: 'X', amount: '15000' }, { tipo: 'recaudoPay', referenciaDuplicada: true })), ['V02'])
   })
 })
 
