@@ -31,7 +31,9 @@ async function crearPool(url: string): Promise<Pool> {
     max: Number(process.env.PG_POOL_MAX ?? 5),
     ssl: local ? undefined : { rejectUnauthorized: false },
     keepAlive: true,
-    idleTimeoutMillis: 5_000,
+    // Abrir una conexión a Supabase cuesta ~1,5 s (TLS + login): se mantienen 60 s para no pagarlo en cada clic.
+    // Si el pooler corta una conexión inactiva antes, el manejador de 'error' y conReintento lo absorben.
+    idleTimeoutMillis: Number(process.env.PG_IDLE_MS ?? 60_000),
     connectionTimeoutMillis: 10_000,
   })
   // Sin este manejador, una conexión inactiva que corta el pooler o la red tumba el proceso

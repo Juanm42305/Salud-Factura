@@ -212,3 +212,31 @@ describe('Estados de la admisión (sección 11.5)', () => {
     assert.equal(await estadoAdmision(adm.id), 'facturada_eps')
   })
 })
+
+describe('Consulta de una admisión (una sola consulta a la base)', () => {
+  it('devuelve servicios, recaudos, facturas y notas con el total, igual que antes', async () => {
+    const { obtenerAdmision } = await import('../lib/services/admisiones')
+    const { adm, referencia, monto } = await admisionConCobro()
+    pay.simular(referencia, 'paid')
+    await procesarWebhookFactusPay(urlWebhook(), avisoPago(referencia, monto))
+    await procesarJobs()
+    const a = await obtenerAdmision(adm.id)
+    assert.equal(a.codigo, adm.codigo)
+    assert.equal(a.estado, 'copago_facturado')
+    assert.deepEqual(a.servicios.map((s: any) => s.codigo), ['890201'])
+    assert.equal(a.total_servicios, 45000)
+    assert.equal(a.recaudos.length, 1)
+    assert.equal(a.recaudos[0].estado, 'paid')
+    assert.equal(Number(a.recaudos[0].monto), monto)
+    assert.equal(a.facturas.length, 1)
+    assert.equal(a.facturas[0].tipo, 'SS-Recaudo')
+    assert.equal(a.facturas[0].is_validated, true)
+    assert.deepEqual(a.notas, [])
+    assert.equal(a.atencion_codigo, adm.codigo.replace(/^ADM-/, 'ATN-'))
+  })
+
+  it('admisión inexistente → 404', async () => {
+    const { obtenerAdmision } = await import('../lib/services/admisiones')
+    await assert.rejects(obtenerAdmision(99999), /no encontrada/)
+  })
+})

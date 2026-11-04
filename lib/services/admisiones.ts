@@ -59,10 +59,30 @@ export async function crearAdmision(datos: NuevaAdmision) {
   })
 }
 
+// Una sola ida y vuelta a la base: Caja consulta esto cada pocos segundos, y desde fuera de la región
+// de Supabase cada consulta cuesta ~200 ms. Las listas se arman en Postgres con json_agg.
 export async function obtenerAdmision(id: number) {
   const a = await db.q1(
     `select a.*, p.nombres, p.apellidos, p.tipo_doc_salud, p.numero_doc, p.categoria,
-        c.numero as contrato_numero, c.cobertura, c.modalidad_pago, e.razon_social as eps
+        c.numero as contrato_numero, c.cobertura, c.modalidad_pago, e.razon_social as eps,
+        (select coalesce(json_agg(json_build_object(
+            'codigo', s.codigo, 'nombre', s.nombre, 'cantidad', s.cantidad, 'tarifa', s.tarifa) order by s.id), '[]'::json)
+         from admision_servicios s where s.admision_id = a.id) as servicios,
+        (select coalesce(json_agg(json_build_object(
+            'id', r.id, 'reference_code', r.reference_code, 'concepto', r.concepto, 'intento', r.intento, 'monto', r.monto,
+            'estado', r.estado, 'breb_key', r.breb_key, 'qr', r.qr, 'qr_expira', r.qr_expira, 'pagado_en', r.pagado_en,
+            'origen_confirmacion', r.origen_confirmacion) order by r.intento), '[]'::json)
+         from recaudos r where r.admision_id = a.id) as recaudos,
+        (select coalesce(json_agg(json_build_object(
+            'id', f.id, 'reference_code', f.reference_code, 'tipo', f.tipo, 'numero', f.numero, 'cufe', f.cufe,
+            'is_validated', f.is_validated, 'estado', f.estado, 'total', f.total, 'total_neto', f.total_neto,
+            'public_url', f.public_url, 'errores_validacion', f.errores_validacion, 'error_mensaje', f.error_mensaje,
+            'updated_at', f.updated_at) order by f.id), '[]'::json)
+         from facturas f where f.admision_id = a.id) as facturas,
+        (select coalesce(json_agg(json_build_object(
+            'id', n.id, 'reference_code', n.reference_code, 'numero', n.numero, 'cude', n.cude, 'estado', n.estado,
+            'total', n.total, 'error_mensaje', n.error_mensaje, 'glosa_id', n.glosa_id) order by n.id), '[]'::json)
+         from notas_credito n join facturas fn on fn.id = n.factura_id where fn.admision_id = a.id) as notas
      from admisiones a
      join pacientes p on p.id = a.paciente_id
      join contratos c on c.id = a.contrato_id
@@ -71,27 +91,9 @@ export async function obtenerAdmision(id: number) {
     [id],
   )
   if (!a) throw new ErrorNegocio(404, 'Admisión no encontrada')
-  const [servicios, recaudos, facturas, notas] = await Promise.all([
-    db.q(`select codigo, nombre, cantidad, tarifa from admision_servicios where admision_id = $1 order by id`, [id]),
-    db.q(
-      `select id, reference_code, concepto, intento, monto, estado, breb_key, qr, qr_expira, pagado_en, origen_confirmacion
-       from recaudos where admision_id = $1 order by intento`,
-      [id],
-    ),
-    db.q(
-      `select id, reference_code, tipo, numero, cufe, is_validated, estado, total, total_neto, public_url,
-          errores_validacion, error_mensaje, updated_at
-       from facturas where admision_id = $1 order by id`,
-      [id],
-    ),
-    db.q(
-      `select n.id, n.reference_code, n.numero, n.cude, n.estado, n.total, n.error_mensaje, n.glosa_id
-       from notas_credito n join facturas f on f.id = n.factura_id where f.admision_id = $1 order by n.id`,
-      [id],
-    ),
-  ])
+  const servicios = a.servicios as { cantidad: number | string; tarifa: number | string }[]
   const total_servicios = servicios.reduce((s, x) => s + Number(x.cantidad) * Number(x.tarifa), 0)
-  return { ...a, atencion_codigo: a.codigo ? codigoAtencion(a.codigo) : null, total_servicios, servicios, recaudos, facturas, notas }
+  return { ...a, atencion_codigo: a.codigo ? codigoAtencion(a.codigo) : null, total_servicios }
 }
 
 export async function listarAdmisiones(estados?: string[]) {
