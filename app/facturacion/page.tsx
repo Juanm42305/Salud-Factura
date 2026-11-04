@@ -21,12 +21,12 @@ export default function Facturacion() {
   const cargarAdm = (x: number) => api(`/api/admisiones/${x}`).then(setAdm)
 
   useEffect(() => {
-    cargarLista()
+    void cargarLista()
   }, [])
   useEffect(() => {
     setRevision(null)
     setResultado(null)
-    if (id) cargarAdm(id)
+    if (id) cargarAdm(id).catch(() => setAdm(null))
   }, [id])
 
   const opciones = () => ({
@@ -61,7 +61,7 @@ export default function Facturacion() {
       })
       setRevision(null)
       await cargarAdm(id)
-      cargarLista()
+      void cargarLista()
     } catch (e: any) {
       if (e.status === 422 && e.datos?.hallazgos) {
         setResultado({ tipo: 'bloqueada', mensaje: 'El validador bloqueó la factura antes de enviarla a la DIAN', hallazgos: e.datos.hallazgos })

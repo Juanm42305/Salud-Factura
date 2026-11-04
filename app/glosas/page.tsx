@@ -30,7 +30,7 @@ export default function Glosas() {
       api('/api/glosas').then(setGlosas),
     ]).catch(() => {})
   useEffect(() => {
-    cargar()
+    void cargar()
   }, [])
 
   const factura = facturas.find((f) => f.id === facturaId)

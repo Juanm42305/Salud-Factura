@@ -34,7 +34,7 @@ export default function Inicio() {
     }
   }
   useEffect(() => {
-    probar()
+    void probar()
   }, [])
 
   return (

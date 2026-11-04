@@ -7,7 +7,7 @@ export default function Cartera() {
   const [error, setError] = useState<string | null>(null)
   const cargar = () => api('/api/cartera').then(setD).catch((e) => setError(e.message))
   useEffect(() => {
-    cargar()
+    void cargar()
   }, [])
 
   const t = d?.totales

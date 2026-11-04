@@ -45,9 +45,9 @@ export default function Caja() {
     if (!admisionId) return
     let vivo = true
     const cargar = () => api(`/api/admisiones/${admisionId}`).then((d) => vivo && setAdm(d)).catch(() => {})
-    cargar()
+    void cargar()
     const t = setInterval(() => {
-      if (!adm || SIGUE_CONSULTANDO.includes(adm.estado) || adm.facturas?.some((f: any) => f.estado === 'enviando')) cargar()
+      if (!adm || SIGUE_CONSULTANDO.includes(adm.estado) || adm.facturas?.some((f: any) => f.estado === 'enviando')) void cargar()
     }, 3000)
     return () => {
       vivo = false
