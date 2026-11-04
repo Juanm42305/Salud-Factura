@@ -63,7 +63,7 @@ export function crearFactusFalso() {
   }
 
   const server = createServer(async (req, res) => {
-    const url = new URL(req.url!, 'http://x')
+    const url = new URL(req.url!, 'http://localhost')
     const cuerpo = await leer(req)
     st.rutas.push(`${req.method} ${url.pathname}${url.search}`)
 
@@ -164,7 +164,7 @@ export function crearPayFalso() {
     rutas: [] as string[],
   }
   const server = createServer(async (req, res) => {
-    const url = new URL(req.url!, 'http://x')
+    const url = new URL(req.url!, 'http://localhost')
     const cuerpo = await leer(req)
     st.rutas.push(`${req.method} ${url.pathname}${url.search}`)
     if (req.method === 'POST' && url.pathname === '/auth') {
