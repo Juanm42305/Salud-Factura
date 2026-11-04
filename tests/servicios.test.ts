@@ -54,7 +54,10 @@ const cuantos = async (sql: string, params: unknown[] = []) => Number((await db.
 describe('Admisión y cobro', () => {
   it('calcula la cuota moderadora del contrato y usa el prefijo del equipo', async () => {
     const adm = await admisionDemo()
-    assert.equal(adm.monto_recaudo, 4700)
+    // Cuota moderadora (CUO) de la categoría A en el contrato del seed: se lee del contrato, no se fija aquí
+    const c = await db.q1(`select cuotas from contratos where numero = 'CTO-EPS-2026-045'`)
+    assert.equal(adm.monto_recaudo, c.cuotas.CUO.A)
+    assert.ok(adm.monto_recaudo >= 10000, 'el sandbox de Factus Pay exige un cobro mínimo de $10.000')
     assert.match(adm.codigo, /^ADM-PRUEBA-\d{4}-\d{6}$/)
     assert.equal(await estadoAdmision(adm.id), 'creada')
   })
