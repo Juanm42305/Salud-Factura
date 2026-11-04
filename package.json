@@ -1,17 +1,29 @@
 {
   "name": "saludfactura",
-  "private": true,
   "version": "0.1.0",
-  "description": "Cobro de copagos con Factus Pay y facturación electrónica del sector salud con Factus",
-  "workspaces": [
-    "backend",
-    "frontend"
-  ],
+  "private": true,
+  "description": "Cobro del copago con Factus Pay y facturación electrónica del sector salud con Factus (SS-Recaudo, SS-CUFE y notas crédito).",
   "scripts": {
-    "dev:backend": "npm run dev -w backend",
-    "dev:frontend": "npm run dev -w frontend",
-    "build": "npm run build -w backend && npm run build -w frontend",
-    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p ${PORT:-3000}",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "db:migrar": "node --env-file=.env scripts/migrar.mjs"
+  },
+  "dependencies": {
+    "next": "^15.5.0",
+    "pg": "^8.13.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
   },
   "engines": {
     "node": ">=20"

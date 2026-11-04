@@ -1,21 +1,13 @@
-# Secretos: NUNCA subir credenciales
+# Credenciales: nunca al repositorio
 .env
 .env.*
 !.env.example
 
-# Dependencias y builds
 node_modules/
-dist/
-build/
-coverage/
-
-# Logs
-*.log
-npm-debug.log*
-
-# Editor / SO
-.vscode/*
-!.vscode/extensions.json
-.idea/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.vercel
 .DS_Store
-Thumbs.db
+npm-debug.log*
