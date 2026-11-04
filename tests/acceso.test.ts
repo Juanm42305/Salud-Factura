@@ -36,7 +36,8 @@ describe('Control de acceso a /api/*', () => {
   })
 
   it('usuario normal no entra a rutas administrativas', () => {
-    assert.ok(esApiAdministrativa('/api/salud') && esApiAdministrativa('/api/dev/simular-pago'))
+    assert.ok(esApiAdministrativa('/api/salud'))
+    assert.equal(decidirAcceso(usuario, '/api/dev/simular-pago').ok, true) // botones de Caja
     const d = decidirAcceso(usuario, '/api/salud')
     assert.equal(!d.ok && d.codigo, 'solo_admin')
   })

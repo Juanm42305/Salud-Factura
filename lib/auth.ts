@@ -19,7 +19,8 @@ export type Decision =
   | { ok: false; status: 401 | 403 | 503; error: string; codigo: string }
 
 /** Rutas de la API que solo puede usar un administrador. */
-export const esApiAdministrativa = (ruta: string) => ruta === '/api/salud' || ruta.startsWith('/api/dev/')
+// /api/dev/simular-pago lo usan los botones de Caja y solo responde en modo simulado (FACTUS_PAY_MOCK=true)
+export const esApiAdministrativa = (ruta: string) => ruta === '/api/salud'
 
 export function rolDesdeReclamos(r: Reclamos): Rol | null {
   const role = r.app_metadata?.role
