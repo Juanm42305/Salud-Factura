@@ -6,6 +6,7 @@
 // Uso:  npm run db:demo            (crea las que falten y muestra la tabla)
 //       npm run db:demo -- --ver   (solo muestra la tabla)
 // Requiere haber corrido antes: npm run db:migrar
+import { calcularRecaudo } from '../lib/copago'
 import { db } from '../lib/db'
 import { crearAdmision } from '../lib/services/admisiones'
 
@@ -63,7 +64,9 @@ async function preparar() {
       [e.etiqueta],
     )
     if (lista) {
-      console.log(`= ${e.etiqueta}: ya hay una lista (${lista.codigo})`)
+      // Si cambiaron las cuotas del contrato (p. ej. mínimo de $10.000 en Factus Pay), se recalcula el cobro
+      const nuevo = await recalcularMonto(lista.id)
+      console.log(`= ${e.etiqueta}: ya hay una lista (${lista.codigo})${nuevo === null ? '' : ` · cobro actualizado a $${nuevo}`}`)
       continue
     }
     const paciente = await db.q1(`select id from pacientes where tipo_doc_salud = $1 and numero_doc = $2`, [
@@ -82,6 +85,23 @@ async function preparar() {
     await db.q(`update admisiones set nota_estado = $1 where id = $2`, [e.etiqueta, adm.id])
     console.log(`+ ${e.etiqueta}: creada ${adm.codigo} (recaudo ${adm.concepto} $${adm.monto_recaudo})`)
   }
+}
+
+/** Recalcula el cobro de una admisión aún sin cobrar con las cuotas vigentes. Devuelve el monto nuevo o null si no cambió. */
+async function recalcularMonto(admisionId: number): Promise<number | null> {
+  const a = await db.q1(
+    `select a.concepto_recaudo, a.monto_recaudo, p.categoria, c.cuotas,
+        (select coalesce(sum(s.cantidad * s.tarifa), 0) from admision_servicios s where s.admision_id = a.id) as total
+     from admisiones a join pacientes p on p.id = a.paciente_id join contratos c on c.id = a.contrato_id
+     where a.id = $1 and a.estado = 'creada'
+       and not exists (select 1 from recaudos r where r.admision_id = a.id)`,
+    [admisionId],
+  )
+  if (!a) return null
+  const monto = calcularRecaudo(a.cuotas, a.concepto_recaudo, a.categoria, Number(a.total))
+  if (monto === Number(a.monto_recaudo)) return null
+  await db.q(`update admisiones set monto_recaudo = $2, updated_at = now() where id = $1`, [admisionId, monto])
+  return monto
 }
 
 async function mostrar() {
