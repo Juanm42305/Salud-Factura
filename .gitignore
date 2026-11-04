@@ -1,0 +1,21 @@
+# Secretos: NUNCA subir credenciales
+.env
+.env.*
+!.env.example
+
+# Dependencias y builds
+node_modules/
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / SO
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
