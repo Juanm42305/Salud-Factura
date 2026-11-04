@@ -2,29 +2,31 @@
 
 ## Ramas
 
-- `main`: siempre desplegable. Es lo que ve el jurado. Nadie hace push directo.
-- `develop`: integración del equipo. Las ramas de trabajo se fusionan aquí.
-- Ramas de trabajo, creadas desde `develop`:
-  - `feat/pay-<tema>`: Integración Factus Pay (ej. `feat/pay-webhook`)
-  - `feat/factus-<tema>`: Integración Factus Facturación (ej. `feat/factus-ss-recaudo`)
-  - `feat/backend-<tema>`: Backend y validador (ej. `feat/backend-validador`)
-  - `feat/front-<tema>`: Frontend (ej. `feat/front-caja`)
-  - `fix/<tema>`: correcciones
+- `main`: siempre desplegable. Es lo que ve el jurado. Nadie hace push directo; todo entra por Pull Request.
+- Una rama por capa del sistema, creadas desde `main`:
+
+| Rama | Capa | Carpetas que toca |
+|---|---|---|
+| `api` | Integración con Factus Pay y Factus Facturación | `lib/factus/`, `lib/builders/`, `app/webhooks/` |
+| `backend` | Lógica, datos y validador | `app/api/`, `lib/services/`, `lib/validation/`, `lib/db.ts`, `db/`, `scripts/`, `tests/` |
+| `frontend` | Pantallas | `app/page.tsx`, `app/caja/`, `app/facturacion/`, `app/glosas/`, `app/cartera/`, `app/components/`, `app/globals.css` |
+
+Cada uno trabaja en la rama de su capa. Si un cambio necesita tocar carpetas de otra capa, se avisa al equipo antes, para no pisarse.
 
 ## Flujo diario
 
 ```bash
-git checkout develop
-git pull
-git checkout -b feat/pay-webhook
+git checkout api            # o backend / frontend
+git pull                    # traer lo último de tu rama
+git merge origin/main       # traer lo que ya entró a main desde las otras ramas
 # ... trabajar ...
 git add <archivos>
 git commit -m "feat(pay): verificar llave del webhook"
-git push -u origin feat/pay-webhook
-# Abrir Pull Request hacia develop; otra persona revisa y aprueba.
+git push
+# Cuando algo funciona, abrir Pull Request  api → main; otra persona revisa y aprueba.
 ```
 
-Cuando `develop` está estable y probado contra sandbox, se abre un PR `develop → main`.
+Hagan PR a `main` seguido, apenas algo funcione, para que las otras ramas no se queden atrás.
 
 ## Commits
 
