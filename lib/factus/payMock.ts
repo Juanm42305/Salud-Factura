@@ -69,6 +69,10 @@ export class MockPayApi implements PayApi {
     return r ? { ...r } : null
   }
 
+  async listarRecaudos(status?: 'ready' | 'paid' | 'failed') {
+    return [...recaudos().values()].filter((r) => !status || r.status === status).map((r) => ({ ...r }))
+  }
+
   async ping() {
     return { ok: true, detalle: 'Modo simulado (FACTUS_PAY_MOCK=true): no se llama a Factus Pay' }
   }

@@ -5,6 +5,7 @@ import { pay } from '../factus'
 import type { RecaudoPay } from '../factus/payClient'
 import { log } from '../logger'
 import { validar } from '../validation'
+import { registrarValidacion } from './bitacoraValidacion'
 import { encolar } from './jobs'
 import { parsearFechaFactus, referenciaRecaudo } from './referencias'
 
@@ -52,6 +53,7 @@ export async function crearCobro(admisionId: number) {
     [referencia, admisionId, monto],
   )
   const v = validar({ reference_code: referencia, amount: String(monto) }, { tipo: 'recaudoPay', referenciaDuplicada: !!duplicada })
+  await registrarValidacion({ tipo: 'recaudoPay', referencia, admisionId, resultado: v, valor: monto })
   if (!v.ok) throw new ErrorValidacion(v.hallazgos)
 
   await db.q(

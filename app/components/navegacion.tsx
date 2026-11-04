@@ -10,6 +10,7 @@ const enlaces = [
   ['/facturacion', '02', 'Facturación EPS', 'Cierre de atenciones'],
   ['/glosas', '03', 'Glosas', 'Auditoría y notas crédito'],
   ['/cartera', '04', 'Cartera', 'Balance por EPS'],
+  ['/control', '05', 'Control', 'Conciliación y glosas evitadas'],
   ['/', '↗', 'Integración', 'Estado de los servicios'],
 ] as const
 

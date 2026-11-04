@@ -7,6 +7,7 @@ import { ErrorNegocio, ErrorValidacion } from '../errores'
 import { factus } from '../factus'
 import { validar } from '../validation'
 import { CONCEPTO_CORRECCION, type TipoGlosa } from '../validation/tablas'
+import { registrarValidacion } from './bitacoraValidacion'
 import { guardarResultado } from './facturas'
 
 export interface NuevaGlosa {
@@ -72,6 +73,7 @@ export async function aceptarGlosa(id: number) {
     numberingRangeId: env.factusRangoNotas,
   })
   const val = validar(payload, { tipo: 'notaCredito', saldoFactura: saldo })
+  await registrarValidacion({ tipo: 'notaCredito', referencia: payload.reference_code, resultado: val, valor: totalItems(payload.items) })
   const nota = await db.q1<{ id: number }>(
     `insert into notas_credito (reference_code, glosa_id, factura_id, concepto_correccion, estado, total, payload, errores_validacion)
      values ($1, $2, $3, $4, $5, $6, $7, $8)

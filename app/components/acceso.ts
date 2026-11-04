@@ -22,6 +22,6 @@ export function puedeAcceder(rol: Rol, ruta: string): boolean {
   return rol === 'administrador' || !esRutaAdministrativa(ruta)
 }
 export function destinoTrasLogin(destino: string | null, rol: Rol): string {
-  return destino && ['/', '/administracion', '/caja', '/facturacion', '/glosas', '/cartera'].includes(destino) && puedeAcceder(rol, destino)
+  return destino && ['/', '/administracion', '/caja', '/facturacion', '/glosas', '/cartera', '/control'].includes(destino) && puedeAcceder(rol, destino)
     ? destino : rol === 'administrador' ? '/administracion' : '/caja'
 }

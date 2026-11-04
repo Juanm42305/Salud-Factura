@@ -1,7 +1,7 @@
 // Factus Facturación simulado (FACTUS_MOCK=true): solo para maquetar pantallas sin credenciales.
 // La demo ante el jurado debe correr con FACTUS_MOCK=false (integración real o descalificación).
 import { createHash } from 'node:crypto'
-import type { DocumentoFactus, FactusApi, ResultadoEmision, TipoDocumento } from './factusClient'
+import type { DocumentoFactus, EventoRadian, FactusApi, ResultadoEmision, TipoDocumento } from './factusClient'
 
 const g = globalThis as unknown as { __sfFactusMock?: { n: number; docs: Map<string, DocumentoFactus> } }
 const estado = () => (g.__sfFactusMock ??= { n: 0, docs: new Map() })
@@ -67,6 +67,10 @@ export class MockFactusApi implements FactusApi {
     if (formato === 'pdf') return { nombre: `${numero}.pdf`, base64: pdfMinimo(`Documento simulado ${numero} - NO VALIDO DIAN`) }
     const xml = `<?xml version="1.0" encoding="UTF-8"?><Mock numero="${numero}">Documento simulado, no válido ante la DIAN</Mock>`
     return { nombre: `${numero}.xml`, base64: Buffer.from(xml).toString('base64') }
+  }
+
+  async eventosRadian(_numero: string): Promise<EventoRadian[]> {
+    return []
   }
 
   async rangosNumeracion() {

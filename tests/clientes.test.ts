@@ -143,3 +143,30 @@ describe('Factus Pay', () => {
     assert.equal(auth.autenticaciones, 1)
   })
 })
+
+describe('Panel de control: listados de Factus', () => {
+  it('Factus Pay: lista recaudos pagados recorriendo las páginas de 15', async () => {
+    const cfg = () => ({ baseUrl: urlPay, email: 'pay@test', password: 'paypw' })
+    const pay = new FactusPayClient(new FactusPayAuth(new MemoriaTokenStore(), cfg), cfg)
+    for (let n = 0; n < 17; n++) {
+      await pay.crearRecaudo(`ADM-LISTA-${n}-CUO`, 10000 + n, 900)
+      paySrv.pagar(`ADM-LISTA-${n}-CUO`, 'paid')
+    }
+    const pagados = (await pay.listarRecaudos('paid')).filter((r) => r.reference_code.startsWith('ADM-LISTA-'))
+    assert.equal(pagados.length, 17)
+    assert.ok(pagados.every((r) => r.status === 'paid'))
+  })
+
+  it('Factus Facturación: eventos RADIAN de una factura', async () => {
+    const { cliente } = nuevoFactus()
+    const r = await cliente.validarFactura(factura('T-RADIAN'))
+    assert.ok(r.ok)
+    if (!r.ok) return
+    assert.deepEqual(await cliente.eventosRadian(r.doc.numero!), [])
+    factusSrv.st.eventosRadian.set(r.doc.numero!, [
+      { number: '1', cude: 'x', event_code: '030', event_name: 'Acuse de recibo', effective_date: '2026-11-04', effective_time: '12:00:00' },
+    ])
+    const eventos = await cliente.eventosRadian(r.doc.numero!)
+    assert.deepEqual(eventos, [{ numero: '1', codigo: '030', nombre: 'Acuse de recibo', fecha: '2026-11-04 12:00:00' }])
+  })
+})

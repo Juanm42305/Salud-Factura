@@ -23,6 +23,8 @@ export interface PayApi {
   crearRecaudo(referencia: string, monto: number, expiracionSeg: number): Promise<{ recaudo: RecaudoPay; existente: boolean }>
   /** null si Factus Pay responde 404. */
   verRecaudo(referencia: string): Promise<RecaudoPay | null>
+  /** GET /v1/collections (15 por página): recorre las páginas hasta `maxPaginas`. */
+  listarRecaudos(status?: 'ready' | 'paid' | 'failed', maxPaginas?: number): Promise<RecaudoPay[]>
   /** Prueba de vida para /api/salud. */
   ping(): Promise<{ ok: boolean; detalle: string }>
 }
@@ -104,6 +106,23 @@ export class FactusPayClient implements PayApi {
       `Factus Pay ver recaudo: ${mensajeDe(r.cuerpo, `HTTP ${r.status}`)}`,
       r.status === 0 || r.status >= 500,
     )
+  }
+
+  async listarRecaudos(status?: 'ready' | 'paid' | 'failed', maxPaginas = 10) {
+    const todos: RecaudoPay[] = []
+    for (let pagina = 1; pagina <= maxPaginas; pagina++) {
+      const q = new URLSearchParams({ page: String(pagina) })
+      if (status) q.set('status', status)
+      const r = await this.llamar('GET', `/v1/collections?${q}`)
+      if (r.status !== 200) {
+        throw new ErrorApi('factus_pay', r.status, r.cuerpo, `Factus Pay listar recaudos: ${mensajeDe(r.cuerpo, `HTTP ${r.status}`)}`)
+      }
+      const lista = Array.isArray(r.cuerpo?.data) ? r.cuerpo.data : Array.isArray(r.cuerpo?.data?.data) ? r.cuerpo.data.data : []
+      todos.push(...lista.map(normalizar))
+      const ultima = Number(r.cuerpo?.meta?.last_page ?? r.cuerpo?.data?.meta?.last_page ?? r.cuerpo?.data?.last_page ?? pagina)
+      if (lista.length === 0 || pagina >= ultima) break
+    }
+    return todos
   }
 
   async ping() {

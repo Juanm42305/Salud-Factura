@@ -28,12 +28,22 @@ export type ResultadoEmision =
   | { ok: true; doc: DocumentoFactus; via: 'creada' | 'existente' | 'reintento_409' }
   | { ok: false; status: number; mensaje: string; cuerpo: unknown; requiereRevision: boolean }
 
+/** Evento RADIAN de una factura (acuse, reclamo, recibo, aceptación...). */
+export interface EventoRadian {
+  numero: string | null
+  codigo: string
+  nombre: string
+  fecha: string | null
+}
+
 export interface FactusApi {
   readonly modo: 'sandbox' | 'mock'
   validarFactura(payload: Record<string, any>): Promise<ResultadoEmision>
   validarNotaCredito(payload: Record<string, any>): Promise<ResultadoEmision>
   descargar(tipo: TipoDocumento, numero: string, formato: 'pdf' | 'xml'): Promise<{ nombre: string; base64: string }>
   rangosNumeracion(): Promise<Array<Record<string, any>>>
+  /** GET /v2/bills/:number/radian/events */
+  eventosRadian(numero: string): Promise<EventoRadian[]>
 }
 
 const RUTAS: Record<TipoDocumento, { base: string; pdf: (n: string) => string; xml: (n: string) => string }> = {
@@ -194,6 +204,21 @@ export class FactusClient implements FactusApi {
       throw new ErrorApi('factus', r.status, r.cuerpo, `Factus descargar ${formato}: ${mensajeDe(r.cuerpo, `HTTP ${r.status}`)}`)
     }
     return { nombre: d.file_name ?? `${numero}.${formato}`, base64 }
+  }
+
+  async eventosRadian(numero: string): Promise<EventoRadian[]> {
+    const r = await this.llamar('GET', `/v2/bills/${encodeURIComponent(numero)}/radian/events`)
+    if (r.status === 404) return []
+    if (r.status !== 200) {
+      throw new ErrorApi('factus', r.status, r.cuerpo, `Factus eventos RADIAN: ${mensajeDe(r.cuerpo, `HTTP ${r.status}`)}`)
+    }
+    const lista = Array.isArray(r.cuerpo) ? r.cuerpo : Array.isArray(r.cuerpo?.data) ? r.cuerpo.data : (r.cuerpo?.data?.data ?? [])
+    return (lista as any[]).map((e) => ({
+      numero: e.number != null ? String(e.number) : null,
+      codigo: String(e.event_code ?? e.code ?? ''),
+      nombre: String(e.event_name ?? e.name ?? ''),
+      fecha: [e.effective_date, e.effective_time].filter(Boolean).join(' ') || null,
+    }))
   }
 
   async rangosNumeracion() {

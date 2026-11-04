@@ -183,6 +183,22 @@ create table if not exists jobs (
 );
 create index if not exists jobs_pendientes_idx on jobs (estado, proximo_intento);
 
+-- Bitácora del validador: cada documento que el motor de reglas detuvo (o advirtió) antes de Factus.
+-- Alimenta el indicador de "glosas evitadas" del panel de control.
+create table if not exists validaciones_log (
+  id bigserial primary key,
+  creado_en timestamptz not null default now(),
+  tipo text not null,                         -- recaudoPay | ssRecaudo | ssCufe | notaCredito
+  origen text not null default 'emision',     -- emision | previsualizacion
+  referencia text not null,
+  admision_id int,
+  bloqueado boolean not null,
+  errores jsonb not null default '[]',
+  advertencias jsonb not null default '[]',
+  valor numeric(14, 2)
+);
+create index if not exists validaciones_log_ref_idx on validaciones_log (referencia);
+
 -- Tokens compartidos entre instancias (Factus Pay permite un solo token activo por usuario)
 create table if not exists api_tokens (
   api text primary key,
@@ -198,7 +214,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['servicios','pacientes','eps','contratos','admisiones','admision_servicios',
-    'recaudos','facturas','factura_recaudos','glosas','notas_credito','webhook_events','jobs','api_tokens']
+    'recaudos','facturas','factura_recaudos','glosas','notas_credito','webhook_events','jobs','api_tokens','validaciones_log']
   loop
     execute format('alter table %I enable row level security', t);
   end loop;

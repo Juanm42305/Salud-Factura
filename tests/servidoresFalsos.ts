@@ -33,6 +33,7 @@ export function crearFactusFalso() {
     fallar5xx: 0,
     rutas: [] as string[],
     payloads: new Map<string, any>(),
+    eventosRadian: new Map<string, any[]>(), // número de factura → eventos RADIAN
   }
   const emitirToken = () => {
     st.n++
@@ -97,7 +98,21 @@ export function crearFactusFalso() {
       const body = JSON.parse(cuerpo)
       const tipo = url.pathname.includes('bills') ? 'bill' : 'nota'
       if (!body.reference_code || !body.items?.length) return json(res, 422, { message: 'Datos inválidos', errors: { reference_code: ['requerido'] } })
-      if (tipo === 'bill' && body.operation_type === 'SS-CUFE' && !body.health) return json(res, 422, { message: 'health requerido' })
+      if (tipo === 'bill' && body.operation_type === 'SS-CUFE') {
+        // Igual que el sandbox real (4-nov-2026): provider_code de máximo 10 y billing_period obligatorio
+        const errores: Record<string, string[]> = {}
+        if (!body.health) errores.health = ['requerido']
+        if (String(body.health?.provider_code ?? '').length > 10) errores['health.provider_code'] = ['El campo código de proveedor no debe contener más de 10 caracteres.']
+        if (!body.billing_period) errores.billing_period = ['El campo periodo de facturación es obligatorio.']
+        if (Object.keys(errores).length) return json(res, 422, { message: 'Error de validación', errors: errores })
+      }
+      if (tipo === 'bill') {
+        // Igual que el sandbox real: los pagos suman el total de la factura (los copagos van en prepayment_details)
+        const totalItems = (body.items ?? []).reduce((s: number, i: any) => s + Number(i.price) * Number(i.quantity), 0)
+        const pagos = (body.payment_details ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0)
+        if (Math.abs(totalItems - pagos) > 0.01)
+          return json(res, 422, { message: 'Error de validación', errors: { payment_details: [`La suma de todos los detalles de pago no es igual al total de la factura. Esperado: ${totalItems.toFixed(2)} - Enviado: ${pagos.toFixed(2)}`] } })
+      }
       if (tipo === 'nota' && ![...st.docs.values()].some((d) => d.number === body.bill_number))
         return json(res, 422, { message: 'Factura no existe', errors: { bill_number: ['inválido'] } })
       if (st.conflictoUnaVez.has(body.reference_code)) {
@@ -138,6 +153,9 @@ export function crearFactusFalso() {
       const numero = decodeURIComponent(m[2])
       const d = [...st.docs.values()].find((x) => x.number === numero)
       return d ? json(res, 200, { status: 'OK', data: d }) : json(res, 404, { message: 'No encontrado' })
+    }
+    if (req.method === 'GET' && (m = /^\/v2\/bills\/([^/]+)\/radian\/events$/.exec(url.pathname))) {
+      return json(res, 200, { status: 'OK', data: st.eventosRadian.get(decodeURIComponent(m[1])) ?? [] })
     }
     if (req.method === 'GET' && url.pathname === '/v2/numbering-ranges') {
       return json(res, 200, {
@@ -201,7 +219,13 @@ export function crearPayFalso() {
       return r ? json(res, 200, { data: r, status: 'success' }) : json(res, 404, { message: 'No encontrado' })
     }
     if (req.method === 'GET' && url.pathname === '/v1/collections') {
-      return json(res, 200, { data: { data: [...st.recaudos.values()] }, status: 'success' })
+      // Forma documentada: data[] (sin qr), links y meta; 15 por página
+      const estado = url.searchParams.get('status')
+      const todos = [...st.recaudos.values()].filter((r) => !estado || r.status === estado)
+      const pagina = Number(url.searchParams.get('page') ?? 1)
+      const ultima = Math.max(1, Math.ceil(todos.length / 15))
+      const data = todos.slice((pagina - 1) * 15, pagina * 15).map(({ qr: _qr, ...r }) => r)
+      return json(res, 200, { data, links: {}, meta: { current_page: pagina, last_page: ultima, per_page: 15, total: todos.length }, status: 'success', message: 'Recaudos obtenidos correctamente' })
     }
     json(res, 404, { message: 'ruta falsa no implementada' })
   })

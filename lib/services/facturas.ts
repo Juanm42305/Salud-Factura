@@ -10,6 +10,7 @@ import type { ResultadoEmision, TipoDocumento } from '../factus/factusClient'
 import { log } from '../logger'
 import { validar } from '../validation'
 import type { Contexto } from '../validation/tipos'
+import { registrarValidacion } from './bitacoraValidacion'
 import { codigoAtencion } from './referencias'
 
 async function marcarRevision(admisionId: number, nota: string) {
@@ -98,6 +99,7 @@ export async function emitirSsRecaudo(referenciaRecaudo: string) {
   })
   const val = validar(payload, { tipo: 'ssRecaudo', recaudo: { estado: d.estado, monto: Number(d.monto) } })
   const total = totalItems(payload.items)
+  await registrarValidacion({ tipo: 'ssRecaudo', referencia: refFactura, admisionId: d.admision_id, resultado: val, valor: total })
 
   const factura = await db.q1<{ id: number }>(
     `insert into facturas (reference_code, tipo, admision_id, recaudo_id, estado, total, total_neto, payload, errores_validacion)
@@ -208,7 +210,16 @@ export async function armarSsCufe(admisionId: number, opciones: OpcionesSsCufe =
 /** Para POST /api/validaciones: corre el validador sin enviar. */
 export async function previsualizarSsCufe(admisionId: number, opciones: OpcionesSsCufe = {}) {
   const { payload, ctx } = await armarSsCufe(admisionId, opciones)
-  return { payload, ...validar(payload, ctx) }
+  const resultado = validar(payload, ctx)
+  await registrarValidacion({
+    tipo: 'ssCufe',
+    origen: 'previsualizacion',
+    referencia: payload.reference_code,
+    admisionId,
+    resultado,
+    valor: totalItems(payload.items),
+  })
+  return { payload, ...resultado }
 }
 
 const ESTADOS_PARA_FACTURAR_EPS = ['copago_facturado', 'atencion_cerrada', 'requiere_revision']
@@ -228,6 +239,7 @@ export async function emitirSsCufe(admisionId: number, opciones: OpcionesSsCufe 
   // Lo que realmente debe pagar la EPS: total de servicios menos los copagos ya recaudados
   const prepagos = ((payload.prepayment_details ?? []) as any[]).reduce((s, p) => s + Number(p.amount), 0)
   const totalNeto = total - prepagos
+  await registrarValidacion({ tipo: 'ssCufe', referencia: payload.reference_code, admisionId, resultado: val, valor: total })
   const factura = await db.q1<{ id: number }>(
     `insert into facturas (reference_code, tipo, admision_id, estado, total, total_neto, payload, errores_validacion)
      values ($1, 'SS-CUFE', $2, $3, $4, $5, $6, $7)
