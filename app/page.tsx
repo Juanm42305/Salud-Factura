@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, type ReactNode } from 'react'
 import { api } from './components/api'
+import { Aviso, Cargando } from './components/ui'
 
 type Salud = any
 
@@ -18,7 +19,7 @@ function Fila({ ok, titulo, children }: { ok: boolean | undefined; titulo: strin
 
 export default function Inicio() {
   const [s, setS] = useState<Salud | null>(null)
-  const [cargando, setCargando] = useState(false)
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   async function probar() {
@@ -28,7 +29,7 @@ export default function Inicio() {
       setS(await api('/api/salud'))
     } catch (e: any) {
       setError(e.message)
-      setS(e.datos ?? null)
+      setS(e.datos?.webhook && e.datos?.factus ? e.datos : null)
     } finally {
       setCargando(false)
     }
@@ -40,7 +41,8 @@ export default function Inicio() {
   return (
     <>
       <h1>Estado de la integración</h1>
-      <p className="sub">GET /api/salud · prueba ante el jurado que ambas APIs de Factus responden con las credenciales sandbox.</p>
+      <p className="sub">Consulta la disponibilidad de Factus, el servicio de recaudo y la base de datos antes de iniciar la demostración.</p>
+      {cargando && <Cargando texto="Comprobando los servicios de integración…" />}
 
       {s && (
         <div className={`banda ${s.demo_lista ? 'ok' : 'mal'}`}>
@@ -51,9 +53,9 @@ export default function Inicio() {
               : 'Hay un componente sin responder. Revisa abajo.'}
         </div>
       )}
-      {error && !s && <div className="aviso error">{error}</div>}
+      {error && !s && <Aviso tipo="error">{error}</Aviso>}
 
-      <div className="rejilla dos">
+      {s && <div className="rejilla dos">
         <Fila ok={s?.factus?.ok} titulo="Factus Facturación">
           {s?.factus?.ok ? (
             <>
@@ -104,7 +106,7 @@ export default function Inicio() {
             </p>
           )}
         </Fila>
-      </div>
+      </div>}
 
       <div className="acciones">
         <button className="btn" onClick={probar} disabled={cargando}>{cargando ? 'Probando…' : 'Probar de nuevo'}</button>

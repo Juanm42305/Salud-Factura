@@ -1,21 +1,28 @@
 'use client'
 import { useEffect, useState } from 'react'
+import type { CarteraDatos } from '../components/tipos'
 import { api, pesos } from '../components/api'
+import { Aviso, Busqueda, Cargando } from '../components/ui'
 
 export default function Cartera() {
-  const [d, setD] = useState<any>(null)
+  const [d, setD] = useState<CarteraDatos | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const cargar = () => api('/api/cartera').then(setD).catch((e) => setError(e.message))
+  const [cargando, setCargando] = useState(true)
+  const [busqueda, setBusqueda] = useState('')
+  const [soloSaldo, setSoloSaldo] = useState(false)
+  const [orden, setOrden] = useState('nombre')
+  const cargar = () => { setCargando(true); setError(null); return api<CarteraDatos>('/api/cartera').then(setD).catch((e) => setError(e.message)).finally(() => setCargando(false)) }
   useEffect(() => {
     void cargar()
   }, [])
 
   const t = d?.totales
+  const filas = (d?.eps ?? []).filter((e) => `${e.razon_social} ${e.nit}`.toLowerCase().includes(busqueda.toLowerCase()) && (!soloSaldo || Number(e.saldo) > 0)).sort((a, b) => orden === 'saldo' ? Number(b.saldo) - Number(a.saldo) : a.razon_social.localeCompare(b.razon_social, 'es'))
   return (
     <>
       <h1>Cartera por EPS</h1>
       <p className="sub">Cada peso con trazabilidad: copago recaudado → factura SS-Recaudo → descuento en la SS-CUFE → glosa → nota crédito.</p>
-      {error && <div className="aviso error">{error}</div>}
+      {error && <Aviso tipo="error">No se pudo actualizar la cartera: {error}. Reintenta con el botón Actualizar.</Aviso>}
 
       {t && (
         <div className="rejilla cuatro" style={{ marginBottom: 18 }}>
@@ -27,7 +34,13 @@ export default function Cartera() {
       )}
 
       <div className="tarjeta">
-        <table>
+        <h2>Balance por entidad</h2>
+        <div className="filtros">
+          <Busqueda valor={busqueda} cambiar={setBusqueda} placeholder="Buscar EPS por nombre o NIT…" />
+          <label>Ordenar por<select value={orden} onChange={e => setOrden(e.target.value)}><option value="nombre">Nombre de EPS</option><option value="saldo">Mayor saldo</option></select></label>
+          <label className="check"><input type="checkbox" checked={soloSaldo} onChange={e => setSoloSaldo(e.target.checked)} />Con saldo pendiente</label>
+        </div>
+        {cargando ? <Cargando texto="Consultando cartera…" /> : filas.length === 0 ? <p className="vacio">{error ? 'La información no está disponible.' : 'No hay EPS que coincidan con estos filtros.'}</p> : <table>
           <thead>
             <tr>
               <th>EPS</th><th className="num">Facturas</th><th className="num">Servicios</th><th className="num">Copagos</th>
@@ -36,7 +49,7 @@ export default function Cartera() {
             </tr>
           </thead>
           <tbody>
-            {(d?.eps ?? []).map((e: any) => (
+            {filas.map((e) => (
               <tr key={e.id}>
                 <td>{e.razon_social}<div className="mudo">NIT {e.nit}</div></td>
                 <td className="num">{e.facturas}</td>
@@ -50,8 +63,9 @@ export default function Cartera() {
               </tr>
             ))}
           </tbody>
-        </table>
-        <div className="acciones"><button className="btn sec" onClick={cargar}>Actualizar</button></div>
+        </table>}
+        <div className="acciones"><button className="btn sec" onClick={cargar} disabled={cargando}>{cargando ? 'Actualizando…' : 'Actualizar'}</button></div>
+        <p className="nota">Los indicadores corresponden al total de la cartera. El saldo se calcula con facturas y notas crédito; no incluye registro de pagos de EPS.</p>
       </div>
     </>
   )

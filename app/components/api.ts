@@ -1,4 +1,5 @@
-// El frontend SOLO habla con el backend propio (/api/*). Nunca llama a Factus directo.
+// Las operaciones hablan con /api/*. Supabase se utiliza directamente solo para Auth.
+import { cabecerasSesion } from './supabase'
 export class ErrorCliente extends Error {
   constructor(mensaje: string, public status: number, public datos: any) {
     super(mensaje)
@@ -7,18 +8,23 @@ export class ErrorCliente extends Error {
 
 export async function api<T = any>(ruta: string, opciones: { metodo?: string; json?: unknown } = {}): Promise<T> {
   const metodo = opciones.metodo ?? (opciones.json !== undefined ? 'POST' : 'GET')
-  const res = await fetch(ruta, {
+  const autorizacion = await cabecerasSesion()
+  let res: Response
+  try { res = await fetch(ruta, {
     method: metodo,
-    headers: opciones.json !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+    headers: { ...autorizacion, ...(opciones.json !== undefined ? { 'Content-Type': 'application/json' } : {}) },
     body: opciones.json !== undefined ? JSON.stringify(opciones.json) : undefined,
     cache: 'no-store',
-  })
+  }) } catch {
+    throw new ErrorCliente('No se pudo conectar con el servidor. Revisa tu conexión. Si estabas enviando una operación, consulta su estado antes de repetirla.', 0, null)
+  }
   const datos = await res.json().catch(() => null)
   if (!res.ok) throw new ErrorCliente(datos?.error ?? `HTTP ${res.status}`, res.status, datos)
+  if (datos === null) throw new ErrorCliente('El servidor devolvió una respuesta inesperada. Actualiza la información antes de continuar.', res.status, null)
   return datos as T
 }
 
-export const pesos = (n: unknown) => `$${Math.round(Number(n ?? 0)).toLocaleString('es-CO')}`
+export const pesos = (n: unknown) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(Number.isFinite(Number(n)) ? Number(n) : 0)
 
 export const fechaHora = (s: string | null | undefined) =>
   s

@@ -8,11 +8,13 @@
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
     "test": "tsx --test tests/*.test.ts",
+    "test:frontend": "tsx --test app/components/*.test.ts",
     "typecheck": "tsc --noEmit",
     "db:migrar": "node --env-file=.env scripts/migrar.mjs",
     "db:demo": "tsx --env-file=.env scripts/preparar-demo.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "next": "^15.5.0",
     "pg": "^8.13.0",
     "react": "^19.1.0",
