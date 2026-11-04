@@ -3,7 +3,7 @@ import { leerJson, responder } from '@/lib/api'
 import { env } from '@/lib/env'
 import { ErrorNegocio } from '@/lib/errores'
 import { pay } from '@/lib/factus'
-import { MockPayApi } from '@/lib/factus/payMock'
+import type { MockPayApi } from '@/lib/factus/payMock'
 import { confirmarPago, reconciliarAdmision } from '@/lib/services/cobros'
 import { procesarJobs } from '@/lib/services/jobs'
 import { procesarWebhookFactusPay } from '@/lib/services/webhook'
@@ -16,8 +16,9 @@ export const dynamic = 'force-dynamic'
 // { "reference_code": "ADM-2026-000001-CUO", "resultado": "paid" | "rejected" | "failed" }
 export async function POST(req: Request) {
   return responder(async () => {
-    const api = pay()
-    if (!env.payMock || !(api instanceof MockPayApi)) throw new ErrorNegocio(404, 'Solo disponible con FACTUS_PAY_MOCK=true')
+      // En `next dev` cada ruta compila su propia copia de las clases: se revisa el modo, no instanceof
+    const api = pay() as unknown as MockPayApi
+    if (!env.payMock || api.modo !== 'mock') throw new ErrorNegocio(404, 'Solo disponible con FACTUS_PAY_MOCK=true')
     const { reference_code, resultado = 'paid' } = await leerJson<{ reference_code: string; resultado?: 'paid' | 'rejected' | 'failed' }>(req)
     const r = api.simular(reference_code, resultado)
     if (!r) throw new ErrorNegocio(404, 'Recaudo no encontrado en el simulador')

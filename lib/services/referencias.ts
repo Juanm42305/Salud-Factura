@@ -5,8 +5,17 @@ export const pad = (n: number, largo = 6) => String(n).padStart(largo, '0')
 export const anioColombia = (d: Date = new Date()) =>
   Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric' }).format(d))
 
-/** ADM-2026-000123 */
-export const codigoAdmision = (id: number, fecha: Date = new Date()) => `ADM-${anioColombia(fecha)}-${pad(id)}`
+/**
+ * Prefijo del equipo (REFERENCIA_EQUIPO). La cuenta sandbox de Factus es compartida por todos,
+ * y un reference_code repetido devuelve la factura de OTRO equipo; con el prefijo no chocan.
+ */
+const prefijoEquipo = () => (process.env.REFERENCIA_EQUIPO ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+
+/** ADM-2026-000123, o ADM-SF42-2026-000123 con REFERENCIA_EQUIPO=SF42 */
+export const codigoAdmision = (id: number, fecha: Date = new Date()) => {
+  const p = prefijoEquipo()
+  return `ADM-${p ? `${p}-` : ''}${anioColombia(fecha)}-${pad(id)}`
+}
 
 /** ATN-2026-000123: la atención usa el mismo número de la admisión. */
 export const codigoAtencion = (codigoAdm: string) => codigoAdm.replace(/^ADM-/, 'ATN-')

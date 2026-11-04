@@ -7,15 +7,20 @@ export async function responder(fn: () => Promise<unknown>, status = 200): Promi
     const r = await fn()
     return Response.json(r ?? { ok: true }, { status })
   } catch (e) {
-    if (e instanceof ErrorValidacion) {
-      return Response.json({ error: e.message, hallazgos: e.hallazgos, payload: e.payload }, { status: 422 })
+    // Se compara por nombre y no con instanceof: en `next dev` cada ruta tiene su propia copia de las clases
+    const nombre = (e as Error)?.name
+    if (nombre === 'ErrorValidacion') {
+      const v = e as ErrorValidacion
+      return Response.json({ error: v.message, hallazgos: v.hallazgos, payload: v.payload }, { status: 422 })
     }
-    if (e instanceof ErrorNegocio) {
-      return Response.json({ error: e.message, detalle: e.detalle }, { status: e.status })
+    if (nombre === 'ErrorNegocio') {
+      const n = e as ErrorNegocio
+      return Response.json({ error: n.message, detalle: n.detalle }, { status: n.status })
     }
-    if (e instanceof ErrorApi) {
-      log.error('api.factus', { api: e.api, status: e.status, mensaje: e.message })
-      return Response.json({ error: e.message, api: e.api, status_api: e.status }, { status: 502 })
+    if (nombre === 'ErrorApi') {
+      const a = e as ErrorApi
+      log.error('api.factus', { api: a.api, status: a.status, mensaje: a.message })
+      return Response.json({ error: a.message, api: a.api, status_api: a.status }, { status: 502 })
     }
     log.error('api.error_interno', { error: e as Error })
     return Response.json({ error: 'Error interno del servidor' }, { status: 500 })

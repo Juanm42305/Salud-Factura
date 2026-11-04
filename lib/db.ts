@@ -1,6 +1,7 @@
 // Acceso a PostgreSQL (Supabase u otro). Solo se usa en el servidor.
 import type { Pool, PoolClient } from 'pg'
 import { env } from './env'
+import { log } from './logger'
 
 export interface Consultor {
   q<T = any>(sql: string, params?: unknown[]): Promise<T[]>
@@ -25,11 +26,31 @@ async function crearPool(url: string): Promise<Pool> {
   // numeric → number (los montos de la demo caben sin pérdida en un double)
   pg.types.setTypeParser(1700, (v: string) => Number(v))
   const local = /localhost|127\.0\.0\.1/.test(url)
-  return new pg.Pool({
+  const p = new pg.Pool({
     connectionString: url,
     max: Number(process.env.PG_POOL_MAX ?? 5),
     ssl: local ? undefined : { rejectUnauthorized: false },
+    keepAlive: true,
+    idleTimeoutMillis: 5_000,
+    connectionTimeoutMillis: 10_000,
   })
+  // Sin este manejador, una conexión inactiva que corta el pooler o la red tumba el proceso
+  p.on('error', (e: Error) => log.warn('db.conexion_cortada', { error: e }))
+  return p
+}
+
+// Errores de red/conexión: la consulta no llegó a ejecutarse, se puede reintentar con otra conexión
+const ERROR_CONEXION = /ECONNRESET|ETIMEDOUT|EPIPE|ECONNREFUSED|Connection terminated|timeout exceeded when trying to connect|connection error/i
+const esErrorConexion = (e: unknown) => ERROR_CONEXION.test(String((e as Error)?.message ?? e))
+
+async function conReintento<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn()
+  } catch (e) {
+    if (!esErrorConexion(e)) throw e
+    log.warn('db.reintento', { error: e as Error })
+    return fn()
+  }
 }
 
 async function pool(): Promise<Pool> {
@@ -57,11 +78,11 @@ function consultor(ejecutar: (sql: string, params: unknown[]) => Promise<any[]>)
 const driverPg: DriverDb = {
   async query(sql, params) {
     const p = await pool()
-    return (await p.query(sql, params as any[])).rows
+    return conReintento(async () => (await p.query(sql, params as any[])).rows)
   },
   async tx(fn) {
     const p = await pool()
-    const cliente: PoolClient = await p.connect()
+    const cliente: PoolClient = await conReintento(() => p.connect())
     try {
       await cliente.query('begin')
       const r = await fn(consultor(async (sql, params) => (await cliente.query(sql, params as any[])).rows))
