@@ -19,8 +19,10 @@ const TOLERANCIA_REDONDEO = 500
 // ── Recaudo Factus Pay ─────────────────────────────────────────
 export const V01: Regla = (p) => {
   const monto = num(p.amount)
-  if (!Number.isFinite(monto) || monto < 1000 || monto > 12_100_000)
-    return [h('V01', 'amount', `El monto ${pesos(monto)} debe estar entre $1.000 y $12.100.000 para cobrarse por QR`)]
+  // Confirmado en el sandbox: Factus Pay exige mínimo $10.000 (su documentación dice $1.000)
+  const minimo = Number(process.env.FACTUS_PAY_MONTO_MINIMO ?? 10000)
+  if (!Number.isFinite(monto) || monto < minimo || monto > 12_100_000)
+    return [h('V01', 'amount', `El monto ${pesos(monto)} debe estar entre ${pesos(minimo)} y $12.100.000 para cobrarse por QR`)]
   if (!/^\d+(\.\d{1,2})?$/.test(String(p.amount)))
     return [h('V01', 'amount', 'El monto admite máximo 2 decimales')]
   return []

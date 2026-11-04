@@ -17,16 +17,16 @@ on conflict (nit) do update set razon_social = excluded.razon_social;
 insert into contratos (eps_id, numero, modalidad_pago, cobertura, plazo_dias, metodo_pago, esquema_recaudo, tarifas, cuotas)
 select e.id, 'CTO-EPS-2026-045', '04', '16', 30, '47', 0,
   '{"890201": 45000, "890301": 38000, "902210": 18500, "903841": 9800, "871121": 62000}',
-  '{"CUO": {"A": 4700, "B": 18800, "C": 49400}, "COP": {"A": 0.115, "B": 0.173, "C": 0.23}}'
+   '{"CUO": {"A": 10000, "B": 18800, "C": 49400}, "COP": {"A": 0.115, "B": 0.173, "C": 0.23}}'
 from eps e where e.nit = '900123456'
-on conflict (numero) do nothing;
+on conflict (numero) do update set cuotas = excluded.cuotas;
 
 insert into contratos (eps_id, numero, modalidad_pago, cobertura, plazo_dias, metodo_pago, esquema_recaudo, tarifas, cuotas)
 select e.id, 'CTO-EPS-2026-077', '04', '17', 45, '47', 1,
   '{"890201": 42000, "890301": 35000, "902210": 17000, "903841": 9000}',
-  '{"CUO": {"A": 4700, "B": 4700, "C": 4700}, "COP": {"A": 0.10, "B": 0.10, "C": 0.10}}'
+   '{"CUO": {"A": 10000, "B": 10000, "C": 10000}, "COP": {"A": 0.10, "B": 0.10, "C": 0.10}}'
 from eps e where e.nit = '800654321'
-on conflict (numero) do nothing;
+on conflict (numero) do update set cuotas = excluded.cuotas;
 
 insert into pacientes (tipo_doc_salud, numero_doc, nombres, apellidos, email, telefono, direccion, municipio_codigo, categoria) values
   ('CC', '1234567890', 'Ana María', 'Pérez Gómez', 'ana.perez@correo.test', '3000000000', 'Calle 1 # 1-1', '23001', 'A'),
