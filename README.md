@@ -12,11 +12,11 @@
 
 | Integrante | Rol |
 |---|---|
-| Said Andrés Marín | _(por confirmar)_ |
+| Said Andrés Marín | Integración con Factus Pay y Factus Facturación, y despliegue |
 | Juan Fernando Manrique | Backend, datos y validador |
-| Jesús Gabriel De Hoyos | _(por confirmar)_ |
-| Jorge Isaac Piñeres | _(por confirmar)_ |
-| Freddy Fajardo | _(por confirmar)_ |
+| Jesús Gabriel De Hoyos | Frontend: login, Caja, Facturación, Glosas, Cartera y Administración |
+| Jorge Isaac Piñeres | Pruebas y testeo |
+| Freddy Fajardo | Pruebas y testeo |
 
 ## Arquitectura
 
