@@ -134,7 +134,7 @@ export async function emitirSsRecaudo(referenciaRecaudo: string) {
 
 async function datosAtencion(admisionId: number) {
   const a = await db.q1(
-    `select a.id, a.codigo, a.estado,
+    `select a.id, a.codigo, a.estado, a.created_at, a.cerrada_en,
         c.numero as contrato_numero, c.modalidad_pago, c.cobertura, c.plazo_dias, c.metodo_pago, c.tarifas,
         e.nit, e.dv, e.razon_social, e.email_radicacion, e.municipio_codigo as eps_municipio
      from admisiones a join contratos c on c.id = a.contrato_id join eps e on e.id = c.eps_id
@@ -186,6 +186,7 @@ export async function armarSsCufe(admisionId: number, opciones: OpcionesSsCufe =
     providerCode: env.ipsProviderCode,
     descontarPrepagos: env.cufeDescuentaPrepagos,
     fechaEmision: fechaColombia(),
+    periodo: { inicio: new Date(a.created_at), fin: a.cerrada_en ? new Date(a.cerrada_en) : new Date() },
     opciones,
     numberingRangeId: env.factusRangoFacturas,
   })
@@ -224,7 +225,9 @@ export async function emitirSsCufe(admisionId: number, opciones: OpcionesSsCufe 
 
   const val = validar(payload, ctx)
   const total = totalItems(payload.items)
-  const totalNeto = (payload.payment_details as any[]).reduce((s, p) => s + Number(p.amount), 0)
+  // Lo que realmente debe pagar la EPS: total de servicios menos los copagos ya recaudados
+  const prepagos = ((payload.prepayment_details ?? []) as any[]).reduce((s, p) => s + Number(p.amount), 0)
+  const totalNeto = total - prepagos
   const factura = await db.q1<{ id: number }>(
     `insert into facturas (reference_code, tipo, admision_id, estado, total, total_neto, payload, errores_validacion)
      values ($1, 'SS-CUFE', $2, $3, $4, $5, $6, $7)

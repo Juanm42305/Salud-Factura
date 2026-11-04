@@ -23,7 +23,7 @@ const cufeOk = (opciones = {}) =>
     contrato: { numero: 'CTO-EPS-2026-045', modalidad_pago: '04', cobertura: '16', plazo_dias: 30 },
     eps: { nit: '900123456', dv: '8', razon_social: 'EPS Andina', municipio_codigo: '11001' },
     recaudosPrevios: [{ referenciaFactura: 'FV-ADM-2026-000123-COP', referenciaRecaudo: 'ADM-2026-000123-COP', fecha: '2026-11-04', concepto: 'COP', monto: 4700 }],
-    providerCode: '230010000101',
+    providerCode: '2300100001',
     descontarPrepagos: true,
     fechaEmision: '2026-11-04',
     opciones,

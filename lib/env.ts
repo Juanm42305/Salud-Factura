@@ -39,7 +39,8 @@ export const env = {
   // IPS
   get ipsProviderCode() { return texto('IPS_PROVIDER_CODE') },
   get ipsNombre() { return texto('IPS_NOMBRE', 'IPS SaludFactura') },
-  get cufeDescuentaPrepagos() { return bandera('SS_CUFE_PAGO_DESCUENTA_PREPAGOS', true) },
+  // Confirmado en el sandbox: Factus exige que payment_details sume el total de la factura (sin restar copagos)
+  get cufeDescuentaPrepagos() { return bandera('SS_CUFE_PAGO_DESCUENTA_PREPAGOS', false) },
 
   // App
   get databaseUrl() { return texto('DATABASE_URL') },

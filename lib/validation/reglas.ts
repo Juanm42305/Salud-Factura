@@ -156,11 +156,23 @@ export const V12: Regla = (p) => {
   if (!s) return [h('V12', 'health', 'La factura SS-CUFE exige el objeto health')]
   const out: Hallazgo[] = []
   if (vacio(s.provider_code)) out.push(h('V12', 'health.provider_code', 'Falta el código de habilitación de la IPS (IPS_PROVIDER_CODE)'))
+  else if (String(s.provider_code).length > 10)
+    out.push(h('V12', 'health.provider_code', `El código de prestador tiene ${String(s.provider_code).length} caracteres; Factus admite máximo 10`))
   if (!METODOS_PAGO_SALUD[s.payment_method_code])
     out.push(h('V12', 'health.payment_method_code', `Modalidad de pago en salud "${s.payment_method_code ?? ''}" no existe en la tabla`))
   if (!COBERTURAS[s.coverage_code])
     out.push(h('V12', 'health.coverage_code', `Plan de cobertura "${s.coverage_code ?? ''}" no existe en la tabla`))
   return out
+}
+
+/** Aprendida en el sandbox: Factus rechaza la SS-CUFE sin periodo de facturación. */
+export const V21: Regla = (p) => {
+  const b = p.billing_period
+  if (!b || vacio(b.start_date) || vacio(b.end_date))
+    return [h('V21', 'billing_period', 'La factura SS-CUFE exige billing_period (inicio y fin de la atención)')]
+  if (`${b.end_date} ${b.end_time ?? ''}` < `${b.start_date} ${b.start_time ?? ''}`)
+    return [h('V21', 'billing_period', 'El fin del periodo de facturación es anterior al inicio')]
+  return []
 }
 
 export const V13: Regla = (p) => {
@@ -228,6 +240,6 @@ const COMUNES = [V03, V04, V05, V06, V18, V19]
 export const REGLAS: Record<string, Regla[]> = {
   recaudoPay: [V01, V02],
   ssRecaudo: [...COMUNES, V07, V08, V09, V10, V11],
-  ssCufe: [...COMUNES, V12, V13, V14, V15, V16, V17],
+  ssCufe: [...COMUNES, V12, V13, V14, V15, V16, V17, V21],
   notaCredito: [...COMUNES, V20],
 }

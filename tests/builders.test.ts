@@ -66,12 +66,12 @@ describe('builders', () => {
       contrato: { numero: 'CTO-EPS-2026-045', modalidad_pago: '04', cobertura: '16', plazo_dias: 30 },
       eps: { nit: '900123456', dv: '8', razon_social: 'EPS Andina', email_radicacion: 'radicacion@eps.com', municipio_codigo: '11001' },
       recaudosPrevios: [{ referenciaFactura: 'FV-ADM-2026-000123-COP', referenciaRecaudo: 'ADM-2026-000123-COP', fecha: '2026-11-04', concepto: 'COP', monto: 4700 }],
-      providerCode: '230010000101',
+      providerCode: '2300100001',
       descontarPrepagos: true,
       fechaEmision: '2026-11-04',
     })
     assert.equal(p.reference_code, 'FV-ATN-2026-000123-EPS')
-    assert.deepEqual(p.health, { provider_code: '230010000101', payment_method_code: '04', coverage_code: '16', contract_number: 'CTO-EPS-2026-045' })
+    assert.deepEqual(p.health, { provider_code: '2300100001', payment_method_code: '04', coverage_code: '16', contract_number: 'CTO-EPS-2026-045' })
     assert.equal(p.prepayment_details[0].concept_code, '01')
     assert.equal(p.payment_details[0].amount, '40300.00')
     assert.equal(p.payment_details[0].due_date, '2026-12-04')

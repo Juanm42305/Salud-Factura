@@ -1,6 +1,6 @@
 // Factura SS-CUFE a la EPS: total de servicios con los copagos ya facturados en prepayment_details.
 import { CONCEPTO_PREPAGO, type ConceptoRecaudo } from '../validation/tablas'
-import { dinero, recortar, sumarDias, totalItems } from './comun'
+import { dinero, fechaColombia, horaColombia, recortar, sumarDias, totalItems } from './comun'
 
 export interface RecaudoPrevio {
   referenciaFactura: string // FV-ADM-...-COP (factura SS-Recaudo validada)
@@ -26,6 +26,8 @@ export interface DatosSsCufe {
   providerCode: string
   descontarPrepagos: boolean
   fechaEmision: string // YYYY-MM-DD
+  /** Periodo de la atención (Factus lo exige en SS-CUFE): de la admisión al cierre. */
+  periodo?: { inicio: Date; fin: Date }
   opciones?: OpcionesSsCufe
   numberingRangeId?: number | null
 }
@@ -57,11 +59,21 @@ export function construirSsCufe(d: DatosSsCufe): Record<string, any> {
   if (o.policyNumber) health.policy_number = o.policyNumber
 
   const refsCopago = d.recaudosPrevios.map((r) => r.referenciaFactura)
+  const billing_period = d.periodo
+    ? {
+        start_date: fechaColombia(d.periodo.inicio),
+        start_time: horaColombia(d.periodo.inicio),
+        end_date: fechaColombia(d.periodo.fin),
+        end_time: horaColombia(d.periodo.fin),
+      }
+    : { start_date: d.fechaEmision, start_time: '00:00:00', end_date: d.fechaEmision, end_time: '23:59:59' }
+
   const payload: Record<string, any> = {
     reference_code: referenciaFacturaEps(d.atencionCodigo),
     document: '01',
     operation_type: 'SS-CUFE',
     send_email: false,
+    billing_period,
     observation: recortar(
       refsCopago.length
         ? `Atención ${d.atencionCodigo}. Copago facturado en ${refsCopago.join(', ')}`

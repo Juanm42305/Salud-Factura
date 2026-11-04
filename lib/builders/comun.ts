@@ -30,6 +30,11 @@ export function fechaColombia(d: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(d)
 }
 
+/** Hora HH:mm:ss en hora de Colombia. */
+export function horaColombia(d: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(d)
+}
+
 export function sumarDias(fechaIso: string, dias: number): string {
   const d = new Date(`${fechaIso}T12:00:00-05:00`)
   d.setUTCDate(d.getUTCDate() + dias)
