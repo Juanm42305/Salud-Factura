@@ -5,9 +5,10 @@ import { useSesion } from '../components/sesion'
 import { destinoTrasLogin, type Rol } from '../components/acceso'
 import { supabaseConfigurado } from '../components/supabase'
 import { Aviso } from '../components/ui'
+import PasoMfa from '../components/pasoMfa'
 
 export default function Login() {
-  const { iniciar, usuario, salir, saliendo } = useSesion()
+  const { iniciar, usuario, salir, saliendo, mfa } = useSesion()
   const [rol, setRol] = useState<Rol>('usuario')
   const [correo, setCorreo] = useState('')
   const [clave, setClave] = useState('')
@@ -38,7 +39,7 @@ export default function Login() {
       </div><p className="login-pie">Factus Pay + Factus Facturación · Sandbox</p>
     </section>
     <section className="login-formulario" aria-labelledby="titulo-acceso">
-      <div className="login-panel"><span className="sello">● Acceso a SaludFactura</span><h2 id="titulo-acceso">{rol === 'administrador' ? 'Acceso de administración' : 'Bienvenido a SaludFactura'}</h2><p className="sub">{rol === 'administrador' ? 'Ingresa con tu cuenta de administrador para supervisar la plataforma.' : 'Ingresa con tu cuenta de usuario para gestionar las operaciones de tu IPS.'}</p>
+      <div className="login-panel"><span className="sello">● Acceso a SaludFactura</span>{mfa && !usuario ? <PasoMfa /> : <><h2 id="titulo-acceso">{rol === 'administrador' ? 'Acceso de administración' : 'Bienvenido a SaludFactura'}</h2><p className="sub">{rol === 'administrador' ? 'Ingresa con tu cuenta de administrador para supervisar la plataforma.' : 'Ingresa con tu cuenta de usuario para gestionar las operaciones de tu IPS.'}</p>
         {usuario ? <><Aviso tipo="ok">Tienes una sesión de {usuario.rol === 'administrador' ? 'administración' : 'usuario'} abierta.</Aviso><Link className="btn login-enviar" href={destinoTrasLogin(null, usuario.rol)}>Continuar al espacio de trabajo</Link><button className="btn sec login-enviar" disabled={saliendo} onClick={() => { void salir() }}>{saliendo ? 'Cerrando…' : 'Cambiar de cuenta'}</button></> : <>
           <div className="login-roles" role="group" aria-label="Tipo de acceso"><button type="button" aria-pressed={rol === 'usuario'} onClick={() => cambiarRol('usuario')} disabled={ocupado}>Usuario</button><button type="button" aria-pressed={rol === 'administrador'} onClick={() => cambiarRol('administrador')} disabled={ocupado}>Administración</button></div>
           {!supabaseConfigurado && <Aviso tipo="alerta">El acceso está pendiente de configurar. Contacta al responsable de la plataforma.</Aviso>}
@@ -49,7 +50,7 @@ export default function Login() {
             <button type="submit" className="btn login-enviar" disabled={!supabaseConfigurado || ocupado || !correo.trim() || !clave}>{ocupado ? 'Ingresando…' : 'Iniciar sesión →'}</button>
           </form>
           <p className="nota">¿Aún no tienes cuenta o no puedes ingresar? Contacta al administrador de tu IPS para gestionar tu acceso.</p>
-        </>}
+        </>}</>}
       </div>
     </section>
   </div>
